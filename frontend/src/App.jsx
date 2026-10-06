@@ -49,7 +49,7 @@ function App() {
   try {
     setScamResult("🔍 Analyzing message with JanSuraksha AI...");
 
-    const response = await fetch("http://127.0.0.1:5000/api/ai-safety", {
+    const response = await fetch("https://jansuraksha-ai-backend.onrender.com/api/ai-safety", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -127,7 +127,7 @@ function App() {
   };
 
   try {
-    const response = await fetch("http://localhost:5000/api/reports", {
+    const response = await fetch("https://jansuraksha-ai-backend.onrender.com/api/reports", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
