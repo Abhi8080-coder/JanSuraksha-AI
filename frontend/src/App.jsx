@@ -1,12 +1,15 @@
 import { useState } from "react";
 import "./App.css";
 
+const API_URL = "https://jansuraksha-ai-backend.onrender.com";
+
 function App() {
   const [page, setPage] = useState("home");
   const [scamText, setScamText] = useState("");
   const [scamResult, setScamResult] = useState("");
   const [newsText, setNewsText] = useState("");
   const [newsResult, setNewsResult] = useState("");
+
   const [reports, setReports] = useState(
     JSON.parse(localStorage.getItem("janSurakshaReports")) || []
   );
@@ -38,54 +41,57 @@ function App() {
     },
   ];
 
-  // Scam detector
-  
+  // =========================
+  // SCAM DETECTOR
+  // =========================
   const checkScam = async () => {
-  if (!scamText.trim()) {
-    setScamResult("Please enter a message or link.");
-    return;
-  }
-
-  try {
-    setScamResult("🔍 Analyzing message with JanSuraksha AI...");
-
-    const response = await fetch("https://jansuraksha-ai-backend.onrender.com/api/ai-safety", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: scamText,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "AI analysis failed");
+    if (!scamText.trim()) {
+      setScamResult("Please enter a message or link.");
+      return;
     }
 
-    setScamResult(data.result);
-  } catch (error) {
-    console.error("Scam detector error:", error);
+    try {
+      setScamResult("🔍 Analyzing message with JanSuraksha AI...");
 
-    setScamResult(
-  "⚠️ Gemini AI is temporarily unavailable. JanSuraksha AI is using its built-in scam detection rules."
-   );
-  }
-};
+      const response = await fetch(`${API_URL}/api/ai-safety`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: scamText,
+        }),
+      });
 
-  // Fake news checker
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "AI analysis failed");
+      }
+
+      setScamResult(data.result);
+    } catch (error) {
+      console.error("Scam detector error:", error);
+
+      setScamResult(
+        "⚠️ Gemini AI is temporarily unavailable. JanSuraksha AI is using its built-in scam detection rules."
+      );
+    }
+  };
+
+  // =========================
+  // FAKE NEWS CHECKER
+  // =========================
   const checkNews = async () => {
-  if (!newsText.trim()) {
-    setNewsResult("Please enter the news or claim you want to check.");
-    return;
-  }
+    if (!newsText.trim()) {
+      setNewsResult("Please enter the news or claim you want to check.");
+      return;
+    }
 
-  try {
-    setNewsResult("🔍 Analyzing information with JanSuraksha AI...");
+    try {
+      setNewsResult("🔍 Analyzing information with JanSuraksha AI...");
 
-    const response = await fetch("https://jansuraksha-ai-backend.onrender.com/api/news-check", {
+      const response = await fetch(`${API_URL}/api/news-check`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -93,91 +99,97 @@ function App() {
         body: JSON.stringify({
           message: newsText,
         }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "News analysis failed");
       }
-    );
 
-    const data = await response.json();
+      setNewsResult(data.result);
+    } catch (error) {
+      console.error("News checker error:", error);
 
-    if (!response.ok) {
-      throw new Error(data.message || "News analysis failed");
+      setNewsResult(
+        "❌ Unable to analyze the information. Please try again."
+      );
     }
-
-    setNewsResult(data.result);
-  } catch (error) {
-    console.error("News checker error:", error);
-
-    setNewsResult(
-      "❌ Unable to analyze the information. Please try again."
-    );
-  }
-};
-
-  // Report public issue
-  const submitReport = async (e) => {
-  e.preventDefault();
-
-  const form = new FormData(e.target);
-
-  const newReport = {
-    issue: form.get("issue"),
-    location: form.get("location"),
-    description: form.get("description")
   };
 
-  try {
-    const response = await fetch("https://jansuraksha-ai-backend.onrender.com/api/reports", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify(newReport),
-  });
+  // =========================
+  // REPORT PUBLIC ISSUE
+  // =========================
+  const submitReport = async (e) => {
+    e.preventDefault();
 
-    const data = await response.json();
+    const form = new FormData(e.target);
 
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to submit report");
-    }
-
-    console.log("Report saved:", data);
-
-    const reportForHistory = {
-      id: Date.now(),
-      issue: newReport.issue,
-      location: newReport.location,
-      description: newReport.description,
-      date: new Date().toLocaleString()
+    const newReport = {
+      issue: form.get("issue"),
+      location: form.get("location"),
+      description: form.get("description"),
     };
 
-    const updatedReports = [...reports, reportForHistory];
+    try {
+      console.log("Sending report:", newReport);
 
-    setReports(updatedReports);
+      const response = await fetch(`${API_URL}/api/reports`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newReport),
+      });
 
-    localStorage.setItem(
-      "janSurakshaReports",
-      JSON.stringify(updatedReports)
-    );
+      const data = await response.json();
 
-    e.target.reset();
+      console.log("Backend response:", data);
 
-    alert("✅ Public issue reported successfully!");
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to submit report");
+      }
 
-    setPage("reports");
+      // Save report locally for history
+      const reportForHistory = {
+        id: Date.now(),
+        issue: newReport.issue,
+        location: newReport.location,
+        description: newReport.description,
+        date: new Date().toLocaleString(),
+      };
 
-  } catch (error) {
-    console.error("Report submission error:", error);
+      const updatedReports = [...reports, reportForHistory];
 
-    alert("❌ Failed to submit report. Please try again.");
-  }
-};
-  
+      setReports(updatedReports);
 
+      localStorage.setItem(
+        "janSurakshaReports",
+        JSON.stringify(updatedReports)
+      );
+
+      e.target.reset();
+
+      alert("✅ Public issue reported successfully!");
+
+      setPage("reports");
+    } catch (error) {
+      console.error("Report submission error:", error);
+
+      alert(
+        "❌ Failed to submit report. Please check your internet connection and try again."
+      );
+    }
+  };
+
+  // =========================
+  // HOME
+  // =========================
   const goHome = () => {
     setPage("home");
     window.scrollTo(0, 0);
   };
 
-  // HOME
   if (page === "home") {
     return (
       <div className="app">
@@ -194,14 +206,16 @@ function App() {
         <main>
           <section className="hero">
             <div className="hero-content">
-              <span className="badge">SMART PUBLIC SAFETY PLATFORM</span>
+              <span className="badge">
+                SMART PUBLIC SAFETY PLATFORM
+              </span>
 
               <h1>Protect Yourself From Digital Threats</h1>
 
               <p>
-                JanSuraksha AI helps citizens identify online scams, understand
-                misinformation, report public safety issues and improve
-                awareness.
+                JanSuraksha AI helps citizens identify online scams,
+                understand misinformation, report public safety issues and
+                improve awareness.
               </p>
 
               <button
@@ -270,13 +284,17 @@ function App() {
         </main>
 
         <footer>
-          <p>© 2026 JanSuraksha AI | Smart Public Safety & Awareness Platform</p>
+          <p>
+            © 2026 JanSuraksha AI | Smart Public Safety & Awareness Platform
+          </p>
         </footer>
       </div>
     );
   }
 
-  // SCAM DETECTOR
+  // =========================
+  // SCAM DETECTOR PAGE
+  // =========================
   if (page === "scam") {
     return (
       <div className="page">
@@ -290,8 +308,8 @@ function App() {
           <h1>Scam Detector</h1>
 
           <p>
-            Enter a suspicious message, SMS, email or link to check for common
-            scam indicators.
+            Enter a suspicious message, SMS, email or link to check for
+            common scam indicators.
           </p>
 
           <textarea
@@ -308,6 +326,7 @@ function App() {
 
           <div className="warning-box">
             <h3>⚠️ Never share</h3>
+
             <ul>
               <li>OTP</li>
               <li>ATM / UPI PIN</li>
@@ -320,7 +339,9 @@ function App() {
     );
   }
 
+  // =========================
   // FAKE NEWS CHECKER
+  // =========================
   if (page === "news") {
     return (
       <div className="page">
@@ -365,7 +386,9 @@ function App() {
 
             <div className="tip">
               <b>3. Compare sources</b>
-              <p>Look for the same information from multiple sources.</p>
+              <p>
+                Look for the same information from multiple sources.
+              </p>
             </div>
 
             <div className="tip">
@@ -378,7 +401,9 @@ function App() {
     );
   }
 
+  // =========================
   // REPORT PAGE
+  // =========================
   if (page === "report") {
     return (
       <div className="page">
@@ -442,7 +467,9 @@ function App() {
     );
   }
 
+  // =========================
   // REPORT HISTORY
+  // =========================
   if (page === "reports") {
     return (
       <div className="page">
@@ -458,19 +485,25 @@ function App() {
           {reports.length === 0 ? (
             <div className="empty">
               <h3>No reports submitted yet.</h3>
-              <p>Your submitted public issues will appear here.</p>
+
+              <p>
+                Your submitted public issues will appear here.
+              </p>
             </div>
           ) : (
             <div className="reports">
               {reports.map((report) => (
                 <div className="report-card" key={report.id}>
                   <h3>{report.issue}</h3>
+
                   <p>
                     <b>📍 Location:</b> {report.location}
                   </p>
+
                   <p>
                     <b>📝 Description:</b> {report.description}
                   </p>
+
                   <small>Reported: {report.date}</small>
                 </div>
               ))}
@@ -481,7 +514,9 @@ function App() {
     );
   }
 
+  // =========================
   // AWARENESS HUB
+  // =========================
   if (page === "awareness") {
     return (
       <div className="page">
@@ -495,13 +530,16 @@ function App() {
           <h1>Awareness Hub</h1>
 
           <p>
-            Learn simple safety practices for digital and public environments.
+            Learn simple safety practices for digital and public
+            environments.
           </p>
 
           <div className="awareness-grid">
             <div className="awareness-card">
               <span>🔐</span>
+
               <h3>Cyber Safety</h3>
+
               <p>
                 Use strong passwords and enable two-factor authentication.
                 Never share your OTP or PIN.
@@ -510,16 +548,20 @@ function App() {
 
             <div className="awareness-card">
               <span>💳</span>
+
               <h3>Online Payment Safety</h3>
+
               <p>
-                Verify the receiver before making payments. Remember that UPI
-                PIN is required to send money, not receive it.
+                Verify the receiver before making payments. Remember that
+                UPI PIN is required to send money, not receive it.
               </p>
             </div>
 
             <div className="awareness-card">
               <span>🎣</span>
+
               <h3>Phishing Awareness</h3>
+
               <p>
                 Do not open suspicious links or provide personal information
                 through unknown websites.
@@ -528,16 +570,20 @@ function App() {
 
             <div className="awareness-card">
               <span>📢</span>
+
               <h3>Fake News Awareness</h3>
+
               <p>
-                Check the source, date and evidence before forwarding news on
-                social media.
+                Check the source, date and evidence before forwarding news
+                on social media.
               </p>
             </div>
 
             <div className="awareness-card">
               <span>🚨</span>
+
               <h3>Public Safety</h3>
+
               <p>
                 Report damaged roads, unsafe locations, broken street lights
                 and other public safety concerns.
@@ -546,7 +592,9 @@ function App() {
 
             <div className="awareness-card">
               <span>👨‍👩‍👧</span>
+
               <h3>Family Safety</h3>
+
               <p>
                 Educate children and family members about online scams,
                 privacy and responsible internet use.
@@ -557,6 +605,8 @@ function App() {
       </div>
     );
   }
+
+  return null;
 }
 
 export default App;
