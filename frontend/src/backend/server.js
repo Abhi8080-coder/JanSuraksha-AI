@@ -283,6 +283,44 @@ Note: Gemini AI was temporarily unavailable, so JanSuraksha AI used its built-in
   }
 });
 
+// Submit Public Issue Report API
+app.post("/api/reports", async (req, res) => {
+  console.log("\n================ REPORT API CALLED ================");
+  console.log("Report data:", req.body);
+
+  try {
+    const { issue, location, description } = req.body;
+
+    if (!issue || !location || !description) {
+      return res.status(400).json({
+        message: "Issue, location and description are required.",
+      });
+    }
+
+    const newReport = new Report({
+      issue,
+      location,
+      description,
+    });
+
+    const savedReport = await newReport.save();
+
+    console.log("Report saved successfully:", savedReport._id);
+
+    res.status(201).json({
+      message: "Report submitted successfully",
+      report: savedReport,
+    });
+  } catch (error) {
+    console.error("Report submission error:", error);
+
+    res.status(500).json({
+      message: "Failed to save report",
+      error: error.message,
+    });
+  }
+});
+
 // Start server
 app.listen(5000, () => {
   console.log("Server running on port 5000");
