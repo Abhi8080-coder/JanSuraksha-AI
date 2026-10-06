@@ -128,12 +128,12 @@ function App() {
 
   try {
     const response = await fetch("https://jansuraksha-ai-backend.onrender.com/api/reports", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(newReport)
-    });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(newReport),
+  });
 
     const data = await response.json();
 
